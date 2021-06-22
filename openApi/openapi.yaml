@@ -1,0 +1,349 @@
+openapi: 3.0.2
+info:
+  title: FastAPI
+  version: 0.1.0
+servers:
+  - url: /api
+paths:
+  /pipeline:
+    post:
+      summary: Start Pipeline
+      operationId: start_pipeline_pipeline_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PipelineData'
+        required: true
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        "422":
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /nexar/{map_id}:
+    post:
+      summary: Start Image Pull
+      operationId: start_image_pull_nexar__map_id__post
+      parameters:
+        - required: true
+          schema:
+            title: Map Id
+            type: string
+          name: map_id
+          in: path
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ImageRequest'
+        required: true
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        "422":
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /classify:
+    post:
+      summary: Start Classifier
+      operationId: start_classifier_classify_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClassifierOptions'
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        "422":
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /aggregator:
+    post:
+      summary: Start Aggregator
+      operationId: start_aggregator_aggregator_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JobRequestPipeline'
+        required: true
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        "422":
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+components:
+  schemas:
+    AggregationType:
+      title: AggregationType
+      enum:
+        - rawPointScores
+        - segmentMean
+        - vision
+      type: string
+      description: An enumeration.
+    ClassifierOptions:
+      title: ClassifierOptions
+      type: object
+      properties:
+        use_gbucket:
+          title: Use Gbucket
+          type: boolean
+          description: Save images to gbucket (true), or locally (false)
+          default: true
+        local_path:
+          title: Local Path
+          type: string
+          description: Only needed if use_gbucket=false. The local path to save images to
+        prune:
+          title: Prune
+          type: boolean
+          description: Only used with local_path. Will delete half the images locally if true after classification
+          default: false
+        save_segmentation:
+          title: Save Segmentation
+          type: boolean
+          description: '@todo'
+          default: false
+    HTTPValidationError:
+      title: HTTPValidationError
+      type: object
+      properties:
+        detail:
+          title: Detail
+          type: array
+          items:
+            $ref: '#/components/schemas/ValidationError'
+    ImageRequest:
+      title: ImageRequest
+      type: object
+      properties:
+        start_datetime:
+          title: Start Datetime
+          type: string
+          description: YYYY-MM-DD[T]HH:MM[:SS[.ffffff]][Z or [±]HH[:]MM]]] or Unix timestamp. The beginning of the timeframe that images are to be pulled for
+          format: date-time
+        end_datetime:
+          title: End Datetime
+          type: string
+          description: YYYY-MM-DD[T]HH:MM[:SS[.ffffff]][Z or [±]HH[:]MM]]] or Unix timestamp. The end of the timeframe that images are to be pulled for
+          format: date-time
+        options:
+          title: Options
+          allOf:
+            - $ref: '#/components/schemas/Options'
+          description: Options
+    JobRequestPipeline:
+      title: JobRequestPipeline
+      required:
+        - requestLayerName
+      type: object
+      properties:
+        requestLayerName:
+          title: Requestlayername
+          type: string
+          description: '@todo'
+        newLayerPrefix:
+          title: Newlayerprefix
+          type: string
+          description: '@todo'
+        queryAreaBuffer:
+          title: Queryareabuffer
+          type: number
+          description: '@todo'
+          default: 70
+        aggregation_types:
+          type: array
+          items:
+            $ref: '#/components/schemas/AggregationType'
+          description: Raw points or aggregated layer
+          default: [rawPointScores]
+        segmentLength:
+          title: Segmentlength
+          type: number
+          description: '@todo'
+          default: 200.0
+        segmentBuffer:
+          title: Segmentbuffer
+          type: number
+          description: '@todo'
+          default: 15.0
+        startTime:
+          title: Starttime
+          type: string
+          description: YYYY-MM-DD[T]HH:MM[:SS[.ffffff]][Z or [±]HH[:]MM]]] or Unix timestamp. The beginning of the timeframe for the new layer
+          format: date-time
+        endTime:
+          title: Endtime
+          type: string
+          description: YYYY-MM-DD[T]HH:MM[:SS[.ffffff]][Z or [±]HH[:]MM]]] or Unix timestamp. The end of the timeframe for the new layer
+          format: date-time
+        requestLayerWorkspace:
+          title: Requestlayerworkspace
+          type: string
+          description: '@todo'
+          default: BaseMaps
+        newLayerWorkspace:
+          title: Newlayerworkspace
+          type: string
+          description: '@todo'
+          default: Payver
+        classifiedBy:
+          title: Classifiedby
+          type: string
+          description: '@todo'
+        includedScores:
+          title: Includedscores
+          type: array
+          items:
+            type: integer
+          description: '@todo'
+        count:
+          title: Count
+          type: integer
+          description: '@todo'
+          default: 5000
+    Options:
+      title: Options
+      type: object
+      properties:
+        h3_resolution:
+          title: H3 Resolution
+          type: integer
+          description: Resolution of the h3s to request to Nexar
+          default: 12
+        image_limit_per_hex:
+          title: Image Limit Per Hex
+          type: integer
+          description: Max number of images to download per hex - will update later to pass in number of images per mile and calculate this?
+          default: 21
+        buffer_distance:
+          title: Buffer Distance
+          type: number
+          description: Amount to buffer the linestrings to convert to hexes. Currently in degrees.
+          default: 0.0002
+        trigger_classifier:
+          title: Trigger Classifier
+          type: boolean
+          description: If true will trigger the classifier after ingestion
+          default: false
+        use_gbucket:
+          title: Use Gbucket
+          type: boolean
+          description: Save images to gbucket (true), or locally (false)
+          default: true
+        local_path:
+          title: Local Path
+          type: string
+          description: Only needed if use_gbucket=false. The local path to save images to
+    PipelineData:
+      title: PipelineData
+      required:
+        - base_layer
+      type: object
+      properties:
+        start:
+          title: Start
+          type: string
+          description: YYYY-MM-DD[T]HH:MM[:SS[.ffffff]][Z or [±]HH[:]MM]]] or Unix timestamp. The beginning of the timeframe that images are to be pulled for
+          format: date-time
+        end:
+          title: End
+          type: string
+          description: YYYY-MM-DD[T]HH:MM[:SS[.ffffff]][Z or [±]HH[:]MM]]] or Unix timestamp. The end of the timeframe that images are to be pulled for
+          format: date-time
+        base_layer:
+          title: Base Layer
+          type: string
+          description: Name of the basemap to pull images for
+        new_layer_workspace:
+          title: New Layer Workspace
+          type: string
+          description: Workspace to put the new layer in
+          default: Payver
+        aggregation_types:
+          type: array
+          items:
+            $ref: '#/components/schemas/AggregationType'
+          description: Raw points or aggregated layer
+          default:
+            - rawPointScores
+        save_segmentation:
+          title: Save Segmentation
+          type: boolean
+          description: Save the segmented images to a bucket
+          default: false
+        layer_time_range:
+          title: Layer Time Range
+          type: string
+          description: Time range to pull data to generate the new map layer. See https://github.com/wroberts/pytimeparse for formatting options
+          default: 1w
+        correction_layer:
+          title: Correction Layer
+          type: boolean
+          description: If true, sets a prefix on the generated layer to indicate corrections are needed
+          default: false
+        image_per_hex_limit:
+          title: Image Per Hex Limit
+          type: integer
+          description: Maximum number of images to pull from nexar per hex
+          default: 21
+        steps:
+          type: array
+          items:
+            $ref: '#/components/schemas/PipelineSteps'
+          description: If blank, all steps are run. Otherwise only steps listed here are run
+    PipelineSteps:
+      title: PipelineSteps
+      enum:
+        - imagePull
+        - classify
+        - aggregate
+      type: string
+      description: An enumeration.
+    ValidationError:
+      title: ValidationError
+      required:
+        - loc
+        - msg
+        - type
+      type: object
+      properties:
+        loc:
+          title: Location
+          type: array
+          items:
+            type: string
+        msg:
+          title: Message
+          type: string
+        type:
+          title: Error Type
+          type: string
